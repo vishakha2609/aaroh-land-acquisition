@@ -13,8 +13,11 @@ from schemas import ProjectCreate, ProjectResponse
 # ============================================================
 # LOAD ML MODEL
 # ============================================================
+from pathlib import Path
 
-model = joblib.load("land_acquisition_model.pkl")
+BASE_DIR = Path(__file__).resolve().parent
+
+model = joblib.load(BASE_DIR / "land_acquisition_model.pkl")
 
 
 # ============================================================
