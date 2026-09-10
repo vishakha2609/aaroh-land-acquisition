@@ -1,4 +1,4 @@
-const API_URL = "http://localhost:8080";
+const API_URL = "https://aaroh-land-acquisition-1.onrender.com";
 
 
 // ============================================================

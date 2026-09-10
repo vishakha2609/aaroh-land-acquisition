@@ -1,7 +1,7 @@
 import React, { useState } from 'react';
 import { SearchCode, ShieldCheck, AlertTriangle } from 'lucide-react';
 
-const API_URL = "http://localhost:8080";
+const API_URL = "https://aaroh-land-acquisition-1.onrender.com";
 
 export default function AnalyzeProject() {
 
@@ -24,10 +24,6 @@ export default function AnalyzeProject() {
   const [loading, setLoading] = useState(false);
   const [error, setError] = useState('');
 
-  // ============================================================
-  // HANDLE INPUT CHANGES
-  // ============================================================
-
   const handleChange = (field, value) => {
     setFormData(prev => ({
       ...prev,
@@ -35,12 +31,7 @@ export default function AnalyzeProject() {
     }));
   };
 
-  // ============================================================
-  // GENERATE KEY RISK FACTORS
-  // ============================================================
-
   const generateRiskFactors = () => {
-
     const factors = [];
 
     if (Number(formData.compensationCompletion) < 50) {
@@ -99,7 +90,7 @@ export default function AnalyzeProject() {
       });
     }
 
-    if (formData.stakeholderResponse === 'Slow') {
+    if (formData.stakeholderResponse === 'Poor') {
       factors.push({
         feature: 'Slow Stakeholder Response',
         impact: 'High Risk Factor',
@@ -107,7 +98,6 @@ export default function AnalyzeProject() {
       });
     }
 
-    // If there aren't enough risk factors
     if (factors.length === 0) {
       factors.push({
         feature: 'Project Conditions',
@@ -119,12 +109,7 @@ export default function AnalyzeProject() {
     return factors.slice(0, 6);
   };
 
-  // ============================================================
-  // GENERATE RECOMMENDATIONS
-  // ============================================================
-
   const generateRecommendations = () => {
-
     const recommendations = [];
 
     if (Number(formData.compensationCompletion) < 50) {
@@ -169,7 +154,7 @@ export default function AnalyzeProject() {
       );
     }
 
-    if (formData.stakeholderResponse === 'Slow') {
+    if (formData.stakeholderResponse === 'Poor') {
       recommendations.push(
         'Increase stakeholder engagement and establish regular follow-up meetings.'
       );
@@ -184,12 +169,7 @@ export default function AnalyzeProject() {
     return recommendations.slice(0, 5);
   };
 
-  // ============================================================
-  // RUN AI ANALYSIS
-  // ============================================================
-
   const handleRunAnalysis = async (e) => {
-
     e.preventDefault();
 
     setLoading(true);
@@ -197,7 +177,6 @@ export default function AnalyzeProject() {
     setResult(null);
 
     try {
-
       const requestBody = {
         project_name: formData.name,
         district: 'Pune',
@@ -245,7 +224,6 @@ export default function AnalyzeProject() {
       );
 
       if (!response.ok) {
-
         const errorText = await response.text();
 
         throw new Error(
@@ -255,7 +233,6 @@ export default function AnalyzeProject() {
 
       const data = await response.json();
 
-      // Convert backend response to frontend format
       const analysisResult = {
         delayProbability: data.delay_probability,
         riskLevel: data.risk_level,
@@ -279,26 +256,18 @@ export default function AnalyzeProject() {
       setResult(analysisResult);
 
     } catch (err) {
-
       console.error('AI prediction error:', err);
 
       setError(
-        'Unable to connect to the AI prediction service. Make sure the FastAPI backend is running on port 8080.'
+        'Unable to connect to the AI prediction service. Please check that the deployed backend is available.'
       );
 
     } finally {
-
       setLoading(false);
-
     }
   };
 
-  // ============================================================
-  // RISK COLOR
-  // ============================================================
-
   const getRiskColor = () => {
-
     if (!result) return 'var(--risk-low)';
 
     if (result.riskLevel === 'CRITICAL') {
@@ -315,10 +284,6 @@ export default function AnalyzeProject() {
 
     return 'var(--risk-low)';
   };
-
-  // ============================================================
-  // UI
-  // ============================================================
 
   return (
     <div>
@@ -338,13 +303,7 @@ export default function AnalyzeProject() {
         information.
       </p>
 
-
       <div className="grid-2">
-
-
-        {/* ======================================================
-            INPUT FORM
-            ====================================================== */}
 
         <div className="card">
 
@@ -352,11 +311,7 @@ export default function AnalyzeProject() {
 
           <form onSubmit={handleRunAnalysis}>
 
-
-            {/* PROJECT NAME */}
-
             <div className="form-group">
-
               <label>
                 Project Name / Reference
               </label>
@@ -369,16 +324,11 @@ export default function AnalyzeProject() {
                   handleChange('name', e.target.value)
                 }
               />
-
             </div>
-
-
-            {/* LAND AREA + FAMILIES */}
 
             <div className="grid-2">
 
               <div className="form-group">
-
                 <label>
                   Land Area (Hectares)
                 </label>
@@ -392,12 +342,9 @@ export default function AnalyzeProject() {
                     handleChange('landArea', e.target.value)
                   }
                 />
-
               </div>
 
-
               <div className="form-group">
-
                 <label>
                   Affected Families
                 </label>
@@ -414,18 +361,13 @@ export default function AnalyzeProject() {
                     )
                   }
                 />
-
               </div>
 
             </div>
 
-
-            {/* LANDOWNERS + STAKEHOLDER */}
-
             <div className="grid-2">
 
               <div className="form-group">
-
                 <label>
                   Registered Landowners
                 </label>
@@ -442,12 +384,9 @@ export default function AnalyzeProject() {
                     )
                   }
                 />
-
               </div>
 
-
               <div className="form-group">
-
                 <label>
                   Stakeholder Response
                 </label>
@@ -462,7 +401,6 @@ export default function AnalyzeProject() {
                     )
                   }
                 >
-
                   <option value="Good">
                     Fast Response
                   </option>
@@ -474,20 +412,14 @@ export default function AnalyzeProject() {
                   <option value="Poor">
                     Slow Response
                   </option>
-
                 </select>
-
               </div>
 
             </div>
 
-
-            {/* COMPENSATION + POSSESSION */}
-
             <div className="grid-2">
 
               <div className="form-group">
-
                 <label>
                   Compensation Paid (%)
                 </label>
@@ -505,12 +437,9 @@ export default function AnalyzeProject() {
                     )
                   }
                 />
-
               </div>
 
-
               <div className="form-group">
-
                 <label>
                   Land Possession (%)
                 </label>
@@ -528,18 +457,13 @@ export default function AnalyzeProject() {
                     )
                   }
                 />
-
               </div>
 
             </div>
 
-
-            {/* REHABILITATION + COURT CASES */}
-
             <div className="grid-2">
 
               <div className="form-group">
-
                 <label>
                   Rehabilitation Progress (%)
                 </label>
@@ -557,12 +481,9 @@ export default function AnalyzeProject() {
                     )
                   }
                 />
-
               </div>
 
-
               <div className="form-group">
-
                 <label>
                   Active Court Cases
                 </label>
@@ -579,18 +500,13 @@ export default function AnalyzeProject() {
                     )
                   }
                 />
-
               </div>
 
             </div>
 
-
-            {/* LEGAL + OWNERSHIP */}
-
             <div className="grid-2">
 
               <div className="form-group">
-
                 <label>
                   Active Legal Dispute?
                 </label>
@@ -605,7 +521,6 @@ export default function AnalyzeProject() {
                     )
                   }
                 >
-
                   <option value="true">
                     Active Dispute Exists
                   </option>
@@ -613,14 +528,10 @@ export default function AnalyzeProject() {
                   <option value="false">
                     Clear / No Disputes
                   </option>
-
                 </select>
-
               </div>
 
-
               <div className="form-group">
-
                 <label>
                   Ownership Conflict?
                 </label>
@@ -635,7 +546,6 @@ export default function AnalyzeProject() {
                     )
                   }
                 >
-
                   <option value="false">
                     No Ownership Conflict
                   </option>
@@ -643,15 +553,10 @@ export default function AnalyzeProject() {
                   <option value="true">
                     Ownership Conflict Exists
                   </option>
-
                 </select>
-
               </div>
 
             </div>
-
-
-            {/* APPROVAL DELAY */}
 
             <div className="form-group">
 
@@ -674,9 +579,6 @@ export default function AnalyzeProject() {
 
             </div>
 
-
-            {/* BUTTON */}
-
             <button
               className="btn btn-primary"
               type="submit"
@@ -687,23 +589,16 @@ export default function AnalyzeProject() {
                 marginTop: '12px'
               }}
             >
-
               <SearchCode size={18} />
 
               {loading
                 ? ' Running AI Prediction...'
                 : ' Run AI Delay Prediction Engine'}
-
             </button>
-
 
           </form>
 
-
-          {/* ERROR */}
-
           {error && (
-
             <div
               style={{
                 marginTop: '15px',
@@ -714,7 +609,6 @@ export default function AnalyzeProject() {
                 fontSize: '0.85rem'
               }}
             >
-
               <AlertTriangle
                 size={16}
                 style={{
@@ -724,17 +618,10 @@ export default function AnalyzeProject() {
               />
 
               {error}
-
             </div>
-
           )}
 
         </div>
-
-
-        {/* ======================================================
-            OUTPUT
-            ====================================================== */}
 
         <div>
 
@@ -752,9 +639,6 @@ export default function AnalyzeProject() {
                 AI Risk Assessment Output
               </h3>
 
-
-              {/* MAIN RESULTS */}
-
               <div
                 style={{
                   display: 'flex',
@@ -762,9 +646,6 @@ export default function AnalyzeProject() {
                   margin: '16px 0'
                 }}
               >
-
-
-                {/* PROBABILITY */}
 
                 <div
                   style={{
@@ -801,9 +682,6 @@ export default function AnalyzeProject() {
                   </span>
 
                 </div>
-
-
-                {/* DELAY */}
 
                 <div
                   style={{
@@ -846,9 +724,6 @@ export default function AnalyzeProject() {
 
               </div>
 
-
-              {/* STATUS */}
-
               <div
                 style={{
                   padding: '10px',
@@ -857,17 +732,12 @@ export default function AnalyzeProject() {
                   marginBottom: '16px'
                 }}
               >
-
                 <strong>
                   Prediction Status:
                 </strong>{' '}
 
                 {result.predictionStatus}
-
               </div>
-
-
-              {/* RISK FACTORS */}
 
               <h4>
                 Key Risk Factors
@@ -910,9 +780,6 @@ export default function AnalyzeProject() {
                 )}
 
               </div>
-
-
-              {/* RECOMMENDATIONS */}
 
               <h4
                 style={{

@@ -111,38 +111,37 @@ export default function App() {
 
   // Update Project
   const handleUpdateProject = async (updatedProj) => {
+  try {
+    const existingProject = projects.find(
+      (p) => p.id === updatedProj.id
+    );
 
-    try {
-
-      const existingProject = projects.find(
-        (p) => p.id === updatedProj.id
-      );
-
-      if (!existingProject) {
-        return;
-      }
-
-      const updatedProject = await updateProject(
-        existingProject.dbId,
-        updatedProj
-      );
-
-      setProjects((prevProjects) =>
-        prevProjects.map((p) =>
-          p.id === updatedProject.id
-            ? updatedProject
-            : p
-        )
-      );
-
-    } catch (error) {
-
-      console.error("Error updating project:", error);
-
-      alert("Failed to update project. Please try again.");
-
+    if (!existingProject) {
+      console.error("Project not found:", updatedProj);
+      return;
     }
-  };
+
+    // Update project in backend
+    await updateProject(
+      existingProject.dbId,
+      updatedProj
+    );
+
+    // IMPORTANT:
+    // Fetch fresh data from backend so the UI gets
+    // the newly calculated ML prediction.
+    const freshProjects = await getProjects();
+
+    setProjects(freshProjects);
+
+    // Close edit modal
+    setEditingProject(null);
+
+  } catch (error) {
+    console.error("Error updating project:", error);
+    alert("Failed to update project. Please try again.");
+  }
+};
 
 
   return (
