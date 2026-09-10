@@ -4,6 +4,7 @@ from sqlalchemy.orm import Session
 import uuid
 import pandas as pd
 import joblib
+from pathlib import Path
 
 from database import engine, get_db, Base
 from models import Project
@@ -13,11 +14,12 @@ from schemas import ProjectCreate, ProjectResponse
 # ============================================================
 # LOAD ML MODEL
 # ============================================================
-from pathlib import Path
 
 BASE_DIR = Path(__file__).resolve().parent
 
-model = joblib.load(BASE_DIR / "land_acquisition_model.pkl")
+model = joblib.load(
+    BASE_DIR / "land_acquisition_model.pkl"
+)
 
 
 # ============================================================
@@ -84,11 +86,16 @@ def predict_project(project: ProjectCreate):
         "approval_delay_days": project.approval_delay_days,
         "possession_pct": project.possession_pct,
         "rehabilitation_pct": project.rehabilitation_pct,
-        "stakeholder_response": stakeholder_mapping[project.stakeholder_response]
+        "stakeholder_response": stakeholder_mapping[
+            project.stakeholder_response
+        ]
     }])
 
     # Get prediction from Random Forest model
-    prediction = round(float(model.predict(input_data)[0]), 2)
+    prediction = round(
+        float(model.predict(input_data)[0]),
+        2
+    )
 
     # ========================================================
     # 4-LEVEL RISK CLASSIFICATION
@@ -111,7 +118,10 @@ def predict_project(project: ProjectCreate):
         status = "Delayed"
 
     # Estimated delay days
-    predicted_delay_days = round(prediction * 1.2, 0)
+    predicted_delay_days = round(
+        prediction * 1.2,
+        0
+    )
 
     return {
         "delay_probability": prediction,
@@ -143,7 +153,10 @@ def create_project(
         "Poor": 2
     }
 
-    # Prepare ML input
+    # ========================================================
+    # PREPARE ML INPUT
+    # ========================================================
+
     input_data = pd.DataFrame([{
         "land_area": project.land_area,
         "affected_families": project.affected_families,
@@ -155,7 +168,9 @@ def create_project(
         "approval_delay_days": project.approval_delay_days,
         "possession_pct": project.possession_pct,
         "rehabilitation_pct": project.rehabilitation_pct,
-        "stakeholder_response": stakeholder_mapping[project.stakeholder_response]
+        "stakeholder_response": stakeholder_mapping[
+            project.stakeholder_response
+        ]
     }])
 
     # ========================================================
@@ -164,7 +179,10 @@ def create_project(
 
     prediction = model.predict(input_data)[0]
 
-    delay_probability = round(float(prediction), 2)
+    delay_probability = round(
+        float(prediction),
+        2
+    )
 
     # ========================================================
     # 4-LEVEL RISK CLASSIFICATION
@@ -190,7 +208,10 @@ def create_project(
     # OTHER PREDICTION VALUES
     # ========================================================
 
-    predicted_delay_days = round(delay_probability * 1.2, 0)
+    predicted_delay_days = round(
+        delay_probability * 1.2,
+        0
+    )
 
     risk_score = delay_probability
 
@@ -246,8 +267,13 @@ def create_project(
 # GET ALL PROJECTS
 # ============================================================
 
-@app.get("/api/projects", response_model=list[ProjectResponse])
-def get_projects(db: Session = Depends(get_db)):
+@app.get(
+    "/api/projects",
+    response_model=list[ProjectResponse]
+)
+def get_projects(
+    db: Session = Depends(get_db)
+):
 
     return db.query(Project).order_by(
         Project.created_at.desc()
@@ -278,15 +304,22 @@ def get_project(
 
 
 # ============================================================
-# UPDATE PROJECT
+# UPDATE PROJECT + RECALCULATE ML PREDICTION
 # ============================================================
 
-@app.put("/api/projects/{project_id}", response_model=ProjectResponse)
+@app.put(
+    "/api/projects/{project_id}",
+    response_model=ProjectResponse
+)
 def update_project(
     project_id: int,
     project: ProjectCreate,
     db: Session = Depends(get_db)
 ):
+
+    # ========================================================
+    # FIND EXISTING PROJECT
+    # ========================================================
 
     existing_project = db.query(Project).filter(
         Project.id == project_id
@@ -298,7 +331,82 @@ def update_project(
             detail="Project not found"
         )
 
-    # Update project information
+    # ========================================================
+    # STAKEHOLDER MAPPING
+    # ========================================================
+
+    stakeholder_mapping = {
+        "Good": 0,
+        "Normal": 1,
+        "Poor": 2
+    }
+
+    # ========================================================
+    # PREPARE UPDATED DATA FOR ML MODEL
+    # ========================================================
+
+    input_data = pd.DataFrame([{
+        "land_area": project.land_area,
+        "affected_families": project.affected_families,
+        "landowners": project.landowners,
+        "compensation_completion": project.compensation_completion,
+        "legal_dispute": int(project.legal_dispute),
+        "court_cases": project.court_cases,
+        "ownership_conflict": int(project.ownership_conflict),
+        "approval_delay_days": project.approval_delay_days,
+        "possession_pct": project.possession_pct,
+        "rehabilitation_pct": project.rehabilitation_pct,
+        "stakeholder_response": stakeholder_mapping[
+            project.stakeholder_response
+        ]
+    }])
+
+    # ========================================================
+    # RUN ML PREDICTION AGAIN
+    # ========================================================
+
+    prediction = model.predict(input_data)[0]
+
+    delay_probability = round(
+        float(prediction),
+        2
+    )
+
+    # ========================================================
+    # RECALCULATE RISK LEVEL
+    # ========================================================
+
+    if delay_probability < 30:
+        risk_level = "LOW"
+        prediction_status = "On-Time"
+
+    elif delay_probability < 60:
+        risk_level = "MEDIUM"
+        prediction_status = "At-Risk"
+
+    elif delay_probability < 80:
+        risk_level = "HIGH"
+        prediction_status = "Delayed"
+
+    else:
+        risk_level = "CRITICAL"
+        prediction_status = "Delayed"
+
+    # ========================================================
+    # RECALCULATE ESTIMATED DELAY
+    # ========================================================
+
+    predicted_delay_days = round(
+        delay_probability * 1.2,
+        0
+    )
+
+    risk_score = delay_probability
+
+    # ========================================================
+    # UPDATE PROJECT INFORMATION
+    # ========================================================
+
     existing_project.project_name = project.project_name
     existing_project.district = project.district
     existing_project.state = project.state
@@ -312,20 +420,61 @@ def update_project(
         project.compensation_completion
     )
 
-    existing_project.legal_dispute = project.legal_dispute
-    existing_project.court_cases = project.court_cases
-    existing_project.ownership_conflict = project.ownership_conflict
+    existing_project.legal_dispute = (
+        project.legal_dispute
+    )
+
+    existing_project.court_cases = (
+        project.court_cases
+    )
+
+    existing_project.ownership_conflict = (
+        project.ownership_conflict
+    )
 
     existing_project.approval_delay_days = (
         project.approval_delay_days
     )
 
-    existing_project.possession_pct = project.possession_pct
-    existing_project.rehabilitation_pct = project.rehabilitation_pct
+    existing_project.possession_pct = (
+        project.possession_pct
+    )
+
+    existing_project.rehabilitation_pct = (
+        project.rehabilitation_pct
+    )
 
     existing_project.stakeholder_response = (
         project.stakeholder_response
     )
+
+    # ========================================================
+    # UPDATE ML RESULTS
+    # ========================================================
+
+    existing_project.prediction_status = (
+        prediction_status
+    )
+
+    existing_project.delay_probability = (
+        delay_probability
+    )
+
+    existing_project.predicted_delay_days = (
+        predicted_delay_days
+    )
+
+    existing_project.risk_score = (
+        risk_score
+    )
+
+    existing_project.risk_level = (
+        risk_level
+    )
+
+    # ========================================================
+    # SAVE UPDATED PROJECT
+    # ========================================================
 
     db.commit()
     db.refresh(existing_project)
