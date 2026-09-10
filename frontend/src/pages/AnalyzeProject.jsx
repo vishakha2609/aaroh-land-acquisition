@@ -1,6 +1,7 @@
 import React, { useState } from 'react';
 import { SearchCode, ShieldCheck, AlertTriangle } from 'lucide-react';
 
+// BACKEND API
 const API_URL = "https://aaroh-land-acquisition-1.onrender.com";
 
 export default function AnalyzeProject() {
@@ -31,10 +32,15 @@ export default function AnalyzeProject() {
     }));
   };
 
+  // ============================================================
+  // CONDITION-BASED RECOMMENDATIONS
+  // ============================================================
+
   const generateRecommendations = () => {
+
     const recommendations = [];
 
-    if (Number(formData.compensationCompletion) < 50) {
+    if (Number(formData.compensationCompletion) < 60) {
       recommendations.push(
         'Prioritize pending compensation payments to affected landowners.'
       );
@@ -58,19 +64,19 @@ export default function AnalyzeProject() {
       );
     }
 
-    if (formData.ownershipConflict === 'true') {
-      recommendations.push(
-        'Verify ownership records and resolve ownership conflicts.'
-      );
-    }
-
     if (Number(formData.courtCases) > 0) {
       recommendations.push(
-        'Monitor pending court cases and coordinate with the legal department.'
+        `Monitor ${formData.courtCases} pending court case(s) and coordinate with the legal department.`
       );
     }
 
-    if (Number(formData.approvalDelayDays) > 30) {
+    if (formData.ownershipConflict === 'true') {
+      recommendations.push(
+        'Verify ownership records and resolve ownership conflicts through stakeholder coordination.'
+      );
+    }
+
+    if (Number(formData.approvalDelayDays) > 10) {
       recommendations.push(
         'Expedite pending administrative approvals and clearances.'
       );
@@ -91,7 +97,12 @@ export default function AnalyzeProject() {
     return recommendations.slice(0, 5);
   };
 
+  // ============================================================
+  // RUN AI ANALYSIS
+  // ============================================================
+
   const handleRunAnalysis = async (e) => {
+
     e.preventDefault();
 
     setLoading(true);
@@ -99,14 +110,21 @@ export default function AnalyzeProject() {
     setResult(null);
 
     try {
+
       const requestBody = {
+
         project_name: formData.name,
+
         district: 'Pune',
+
         state: 'Maharashtra',
+
         project_type: 'Highway',
 
         land_area: Number(formData.landArea),
+
         affected_families: Number(formData.affectedFamilies),
+
         landowners: Number(formData.landowners),
 
         compensation_completion:
@@ -138,14 +156,17 @@ export default function AnalyzeProject() {
         `${API_URL}/api/predict`,
         {
           method: 'POST',
+
           headers: {
             'Content-Type': 'application/json'
           },
+
           body: JSON.stringify(requestBody)
         }
       );
 
       if (!response.ok) {
+
         const errorText = await response.text();
 
         throw new Error(
@@ -155,51 +176,85 @@ export default function AnalyzeProject() {
 
       const data = await response.json();
 
+      // ========================================================
+      // SHAP FACTORS
+      // Show only factors that increase risk.
+      // Maximum 5 factors are displayed.
+      // ========================================================
+
+      const shapFactors = (data.shap_factors || [])
+        .filter(item => item.impact > 0)
+        .sort((a, b) => b.impact - a.impact)
+        .slice(0, 5);
+
       const analysisResult = {
-        delayProbability: data.delay_probability,
-        riskLevel: data.risk_level,
-        predictionStatus: data.prediction_status,
-        predictedDelayDays: data.predicted_delay_days,
 
-        // Use actual SHAP factors returned by backend
-        shapFactors: data.shap_factors || [],
+        delayProbability:
+          data.delay_probability,
 
-        // Keep current recommendation system unchanged for now
-        recommendations: generateRecommendations(),
+        riskLevel:
+          data.risk_level,
+
+        predictionStatus:
+          data.prediction_status,
+
+        predictedDelayDays:
+          data.predicted_delay_days,
+
+        shapFactors:
+          shapFactors,
+
+        recommendations:
+          generateRecommendations(),
 
         expectedRange:
+
           data.predicted_delay_days > 0
+
             ? `${Math.max(
                 0,
                 Number(data.predicted_delay_days) - 15
               )} - ${
                 Number(data.predicted_delay_days) + 15
               } Days`
+
             : 'No significant delay expected'
       };
 
       setResult(analysisResult);
 
     } catch (err) {
-      console.error('AI prediction error:', err);
+
+      console.error(
+        'AI prediction error:',
+        err
+      );
 
       setError(
-        'Unable to connect to the AI prediction service. Please check that the deployed backend is available.'
+        'Unable to connect to the AI prediction service. Please try again in a few seconds.'
       );
 
     } finally {
+
       setLoading(false);
+
     }
   };
 
-  const getRiskColor = () => {
-    if (!result) return 'var(--risk-low)';
+  // ============================================================
+  // RISK COLOR
+  // ============================================================
 
-    if (result.riskLevel === 'CRITICAL') {
-      return 'var(--risk-critical)';
+  const getRiskColor = () => {
+
+    if (!result) {
+      return 'var(--risk-low)';
     }
 
-    if (result.riskLevel === 'HIGH') {
+    if (
+      result.riskLevel === 'CRITICAL' ||
+      result.riskLevel === 'HIGH'
+    ) {
       return 'var(--risk-critical)';
     }
 
@@ -210,7 +265,12 @@ export default function AnalyzeProject() {
     return 'var(--risk-low)';
   };
 
+  // ============================================================
+  // UI
+  // ============================================================
+
   return (
+
     <div>
 
       <h2>
@@ -223,20 +283,29 @@ export default function AnalyzeProject() {
           marginBottom: '20px'
         }}
       >
-        Run AI-based delay prediction using project, legal,
-        compensation, possession, rehabilitation and stakeholder
-        information.
+        Run AI-based delay prediction using project,
+        legal, compensation, possession, rehabilitation
+        and stakeholder information.
       </p>
 
       <div className="grid-2">
 
+        {/* =====================================================
+            INPUT FORM
+        ====================================================== */}
+
         <div className="card">
 
-          <h3>Project Inputs for AI Model</h3>
+          <h3>
+            Project Inputs for AI Model
+          </h3>
 
-          <form onSubmit={handleRunAnalysis}>
+          <form
+            onSubmit={handleRunAnalysis}
+          >
 
             <div className="form-group">
+
               <label>
                 Project Name / Reference
               </label>
@@ -246,14 +315,19 @@ export default function AnalyzeProject() {
                 type="text"
                 value={formData.name}
                 onChange={e =>
-                  handleChange('name', e.target.value)
+                  handleChange(
+                    'name',
+                    e.target.value
+                  )
                 }
               />
+
             </div>
 
             <div className="grid-2">
 
               <div className="form-group">
+
                 <label>
                   Land Area (Hectares)
                 </label>
@@ -264,12 +338,17 @@ export default function AnalyzeProject() {
                   min="1"
                   value={formData.landArea}
                   onChange={e =>
-                    handleChange('landArea', e.target.value)
+                    handleChange(
+                      'landArea',
+                      e.target.value
+                    )
                   }
                 />
+
               </div>
 
               <div className="form-group">
+
                 <label>
                   Affected Families
                 </label>
@@ -286,6 +365,7 @@ export default function AnalyzeProject() {
                     )
                   }
                 />
+
               </div>
 
             </div>
@@ -293,6 +373,7 @@ export default function AnalyzeProject() {
             <div className="grid-2">
 
               <div className="form-group">
+
                 <label>
                   Registered Landowners
                 </label>
@@ -309,9 +390,11 @@ export default function AnalyzeProject() {
                     )
                   }
                 />
+
               </div>
 
               <div className="form-group">
+
                 <label>
                   Stakeholder Response
                 </label>
@@ -326,6 +409,7 @@ export default function AnalyzeProject() {
                     )
                   }
                 >
+
                   <option value="Good">
                     Fast Response
                   </option>
@@ -337,7 +421,9 @@ export default function AnalyzeProject() {
                   <option value="Poor">
                     Slow Response
                   </option>
+
                 </select>
+
               </div>
 
             </div>
@@ -345,6 +431,7 @@ export default function AnalyzeProject() {
             <div className="grid-2">
 
               <div className="form-group">
+
                 <label>
                   Compensation Paid (%)
                 </label>
@@ -362,9 +449,11 @@ export default function AnalyzeProject() {
                     )
                   }
                 />
+
               </div>
 
               <div className="form-group">
+
                 <label>
                   Land Possession (%)
                 </label>
@@ -382,6 +471,7 @@ export default function AnalyzeProject() {
                     )
                   }
                 />
+
               </div>
 
             </div>
@@ -389,6 +479,7 @@ export default function AnalyzeProject() {
             <div className="grid-2">
 
               <div className="form-group">
+
                 <label>
                   Rehabilitation Progress (%)
                 </label>
@@ -406,9 +497,11 @@ export default function AnalyzeProject() {
                     )
                   }
                 />
+
               </div>
 
               <div className="form-group">
+
                 <label>
                   Active Court Cases
                 </label>
@@ -425,6 +518,7 @@ export default function AnalyzeProject() {
                     )
                   }
                 />
+
               </div>
 
             </div>
@@ -432,6 +526,7 @@ export default function AnalyzeProject() {
             <div className="grid-2">
 
               <div className="form-group">
+
                 <label>
                   Active Legal Dispute?
                 </label>
@@ -446,6 +541,7 @@ export default function AnalyzeProject() {
                     )
                   }
                 >
+
                   <option value="true">
                     Active Dispute Exists
                   </option>
@@ -453,10 +549,13 @@ export default function AnalyzeProject() {
                   <option value="false">
                     Clear / No Disputes
                   </option>
+
                 </select>
+
               </div>
 
               <div className="form-group">
+
                 <label>
                   Ownership Conflict?
                 </label>
@@ -471,6 +570,7 @@ export default function AnalyzeProject() {
                     )
                   }
                 >
+
                   <option value="false">
                     No Ownership Conflict
                   </option>
@@ -478,7 +578,9 @@ export default function AnalyzeProject() {
                   <option value="true">
                     Ownership Conflict Exists
                   </option>
+
                 </select>
+
               </div>
 
             </div>
@@ -514,16 +616,19 @@ export default function AnalyzeProject() {
                 marginTop: '12px'
               }}
             >
+
               <SearchCode size={18} />
 
               {loading
                 ? ' Running AI Prediction...'
                 : ' Run AI Delay Prediction Engine'}
+
             </button>
 
           </form>
 
           {error && (
+
             <div
               style={{
                 marginTop: '15px',
@@ -534,6 +639,7 @@ export default function AnalyzeProject() {
                 fontSize: '0.85rem'
               }}
             >
+
               <AlertTriangle
                 size={16}
                 style={{
@@ -543,10 +649,16 @@ export default function AnalyzeProject() {
               />
 
               {error}
+
             </div>
+
           )}
 
         </div>
+
+        {/* =====================================================
+            RESULT
+        ====================================================== */}
 
         <div>
 
@@ -601,7 +713,9 @@ export default function AnalyzeProject() {
                   </div>
 
                   <span
-                    className={`badge badge-${result.riskLevel.toLowerCase()}`}
+                    className={
+                      `badge badge-${result.riskLevel.toLowerCase()}`
+                    }
                   >
                     {result.riskLevel}
                   </span>
@@ -657,16 +771,32 @@ export default function AnalyzeProject() {
                   marginBottom: '16px'
                 }}
               >
+
                 <strong>
                   Prediction Status:
                 </strong>{' '}
 
                 {result.predictionStatus}
+
               </div>
 
+              {/* =================================================
+                  SHAP FACTORS
+              ================================================== */}
+
               <h4>
-                Key Risk Factors
+                Why is this project at risk?
               </h4>
+
+              <p
+                style={{
+                  color: 'var(--text-muted)',
+                  fontSize: '0.8rem',
+                  marginBottom: '10px'
+                }}
+              >
+                Top factors identified by the AI model.
+              </p>
 
               <div className="shap-bar-container">
 
@@ -675,38 +805,51 @@ export default function AnalyzeProject() {
                   result.shapFactors.map(
                     (item, idx) => {
 
-                      const increasesRisk =
-                        item.direction === 'increases risk';
+                      // Clean display names for SHAP factors
+                      const featureLabels = {
+                        legal_dispute: 'Active Legal Dispute',
+                        compensation_completion: 'Compensation Completion',
+                        stakeholder_response: 'Stakeholder Response',
+                        possession_pct: 'Land Possession',
+                        rehabilitation_pct: 'Rehabilitation Progress',
+                        court_cases: 'Active Court Cases',
+                        approval_delay_days: 'Approval Delay',
+                        affected_families: 'Affected Families',
+                        landowners: 'Landowners',
+                        ownership_conflict: 'Ownership Conflict',
+                        land_area: 'Land Area'
+                      };
+
+                      const featureName =
+                        featureLabels[item.feature] ||
+                        item.feature;
 
                       return (
+
                         <div
                           key={idx}
                           className="shap-item"
                           style={{
                             borderLeftColor:
-                              increasesRisk
-                                ? 'var(--risk-critical)'
-                                : 'var(--risk-low)'
+                              'var(--risk-critical)'
                           }}
                         >
 
                           <span>
-                            {item.feature}
+                            {featureName}
                           </span>
 
                           <strong
                             style={{
                               color:
-                                increasesRisk
-                                  ? 'var(--risk-critical)'
-                                  : 'var(--risk-low)'
+                                'var(--risk-critical)'
                             }}
                           >
-                            {item.impact > 0 ? '+' : ''}
-                            {item.impact}
+                            +{Number(item.impact).toFixed(2)}
                           </strong>
 
                         </div>
+
                       );
 
                     }
@@ -720,12 +863,16 @@ export default function AnalyzeProject() {
                       fontSize: '0.85rem'
                     }}
                   >
-                    No SHAP explanation available.
+                    No major positive risk contributors identified.
                   </div>
 
                 )}
 
               </div>
+
+              {/* =================================================
+                  TARGETED RECOMMENDATIONS
+              ================================================== */}
 
               <h4
                 style={{
