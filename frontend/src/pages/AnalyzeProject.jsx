@@ -4,6 +4,7 @@ import { SearchCode, ShieldCheck, AlertTriangle } from 'lucide-react';
 // BACKEND API
 const API_URL = "https://aaroh-land-acquisition-1.onrender.com";
 
+
 export default function AnalyzeProject() {
 
   const [formData, setFormData] = useState({
@@ -30,71 +31,6 @@ export default function AnalyzeProject() {
       ...prev,
       [field]: value
     }));
-  };
-
-  // ============================================================
-  // CONDITION-BASED RECOMMENDATIONS
-  // ============================================================
-
-  const generateRecommendations = () => {
-
-    const recommendations = [];
-
-    if (Number(formData.compensationCompletion) < 60) {
-      recommendations.push(
-        'Prioritize pending compensation payments to affected landowners.'
-      );
-    }
-
-    if (Number(formData.possessionPct) < 50) {
-      recommendations.push(
-        'Accelerate land possession through coordination with landowners and field authorities.'
-      );
-    }
-
-    if (Number(formData.rehabilitationPct) < 50) {
-      recommendations.push(
-        'Expedite rehabilitation and resettlement activities for affected families.'
-      );
-    }
-
-    if (formData.legalDispute === 'true') {
-      recommendations.push(
-        'Escalate active legal disputes for faster legal resolution.'
-      );
-    }
-
-    if (Number(formData.courtCases) > 0) {
-      recommendations.push(
-        `Monitor ${formData.courtCases} pending court case(s) and coordinate with the legal department.`
-      );
-    }
-
-    if (formData.ownershipConflict === 'true') {
-      recommendations.push(
-        'Verify ownership records and resolve ownership conflicts through stakeholder coordination.'
-      );
-    }
-
-    if (Number(formData.approvalDelayDays) > 10) {
-      recommendations.push(
-        'Expedite pending administrative approvals and clearances.'
-      );
-    }
-
-    if (formData.stakeholderResponse === 'Poor') {
-      recommendations.push(
-        'Increase stakeholder engagement and establish regular follow-up meetings.'
-      );
-    }
-
-    if (recommendations.length === 0) {
-      recommendations.push(
-        'Continue regular monitoring. No immediate intervention is required.'
-      );
-    }
-
-    return recommendations.slice(0, 5);
   };
 
   // ============================================================
@@ -204,8 +140,12 @@ export default function AnalyzeProject() {
         shapFactors:
           shapFactors,
 
+        // ======================================================
+        // SHAP-BASED RECOMMENDATIONS FROM BACKEND
+        // ======================================================
+
         recommendations:
-          generateRecommendations(),
+          data.recommendations || [],
 
         expectedRange:
 
@@ -899,7 +839,7 @@ export default function AnalyzeProject() {
                         marginBottom: '6px'
                       }}
                     >
-                      {rec}
+                      {rec.recommendation}
                     </li>
 
                   )
