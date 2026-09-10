@@ -21,7 +21,7 @@ import Recommendations from './pages/Recommendations';
 import Reports from './pages/Reports';
 import Profile from './pages/Profile';
 
-import { MOCK_NOTICES, MOCK_ALERTS } from './data/mockData';
+import { MOCK_NOTICES } from './data/mockData';
 
 import {
   getProjects,
@@ -39,8 +39,6 @@ export default function App() {
   const [activeOfficerPage, setActiveOfficerPage] = useState('dashboard');
 
   const [projects, setProjects] = useState([]);
-
-  const [alerts, setAlerts] = useState(MOCK_ALERTS);
 
   const [deleteTarget, setDeleteTarget] = useState(null);
 
@@ -143,6 +141,11 @@ export default function App() {
   }
 };
 
+const activeAlertsCount = projects.filter(
+  (project) =>
+    project.riskLevel === 'HIGH' ||
+    project.riskLevel === 'CRITICAL'
+).length;
 
   return (
 
@@ -210,7 +213,7 @@ export default function App() {
               Still using alerts.length for the sidebar
               notification count for now.
             */
-            notificationsCount={alerts.length}
+            notificationsCount={activeAlertsCount}
           />
 
 
