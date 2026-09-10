@@ -6,3 +6,5 @@ aiosqlite
 pydantic
 httpx
 python-dotenv
+pandas
+joblib
