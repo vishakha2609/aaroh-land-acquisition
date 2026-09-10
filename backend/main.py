@@ -1,4 +1,3 @@
-
 from fastapi import FastAPI, Depends, HTTPException
 from fastapi.middleware.cors import CORSMiddleware
 from sqlalchemy.orm import Session
@@ -29,6 +28,46 @@ model = joblib.load(
 # ============================================================
 
 explainer = shap.TreeExplainer(model)
+
+
+# ============================================================
+# SHAP → RECOMMENDATION MAPPING
+# ============================================================
+
+recommendation_map = {
+    "legal_dispute":
+        "Escalate active legal disputes for faster resolution.",
+
+    "compensation_completion":
+        "Prioritize pending compensation payments to affected landowners.",
+
+    "stakeholder_response":
+        "Increase stakeholder engagement and follow-up.",
+
+    "court_cases":
+        "Monitor pending court cases and coordinate with the legal department.",
+
+    "possession_pct":
+        "Accelerate land possession through coordination with landowners and field authorities.",
+
+    "rehabilitation_pct":
+        "Expedite rehabilitation and resettlement activities for affected families.",
+
+    "approval_delay_days":
+        "Expedite pending approvals and coordinate with concerned authorities.",
+
+    "ownership_conflict":
+        "Verify ownership records and resolve ownership conflicts.",
+
+    "affected_families":
+        "Prioritize stakeholder coordination for affected families.",
+
+    "landowners":
+        "Strengthen coordination with affected landowners.",
+
+    "land_area":
+        "Strengthen planning and monitoring for the large land acquisition area."
+}
 
 
 # ============================================================
@@ -72,7 +111,7 @@ def health():
 
 
 # ============================================================
-# ML PREDICTION + SHAP EXPLANATION
+# ML PREDICTION + SHAP + RECOMMENDATIONS
 # ============================================================
 
 @app.post("/api/predict")
@@ -136,12 +175,39 @@ def predict_project(project: ProjectCreate):
             "direction": direction
         })
 
-    # Sort by strongest impact
+    # Sort by strongest SHAP impact
     shap_factors = sorted(
         shap_factors,
         key=lambda x: abs(x["impact"]),
         reverse=True
     )
+
+    # ========================================================
+    # SHAP-BASED RECOMMENDATION ENGINE
+    # ========================================================
+
+    # Only factors that positively contribute to the
+    # current prediction are considered.
+    positive_factors = [
+        factor for factor in shap_factors
+        if factor["impact"] > 0
+    ]
+
+    # Generate recommendations from the strongest
+    # positive SHAP factors.
+    recommendations = []
+
+    for factor in positive_factors[:5]:
+
+        feature = factor["feature"]
+
+        if feature in recommendation_map:
+
+            recommendations.append({
+                "factor": feature,
+                "impact": factor["impact"],
+                "recommendation": recommendation_map[feature]
+            })
 
     # ========================================================
     # 4-LEVEL RISK CLASSIFICATION
@@ -163,18 +229,26 @@ def predict_project(project: ProjectCreate):
         risk_level = "CRITICAL"
         status = "Delayed"
 
-    # Estimated delay days
+    # ========================================================
+    # ESTIMATED DELAY DAYS
+    # ========================================================
+
     predicted_delay_days = round(
         prediction * 1.2,
         0
     )
+
+    # ========================================================
+    # FINAL RESPONSE
+    # ========================================================
 
     return {
         "delay_probability": prediction,
         "risk_level": risk_level,
         "prediction_status": status,
         "predicted_delay_days": predicted_delay_days,
-        "shap_factors": shap_factors
+        "shap_factors": shap_factors,
+        "recommendations": recommendations
     }
 
 
@@ -556,4 +630,3 @@ def delete_project(
         "message": "Project deleted successfully",
         "id": project_id
     }
-
