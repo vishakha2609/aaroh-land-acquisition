@@ -30,6 +30,10 @@ class Project(Base):
 
     state = Column(String)
 
+    latitude = Column(Float)
+
+    longitude = Column(Float)
+
     project_type = Column(String)
 
     land_area = Column(Float)

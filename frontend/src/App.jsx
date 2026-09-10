@@ -1,4 +1,5 @@
 import React, { useEffect, useState } from 'react';
+
 import PublicHeader from './components/PublicHeader';
 import OfficerSidebar from './components/OfficerSidebar';
 import Footer from './components/Footer';
@@ -47,7 +48,10 @@ export default function App() {
   const [editingProject, setEditingProject] = useState(null);
 
 
-  // Load projects from backend when application starts
+  // ============================================================
+  // LOAD PROJECTS
+  // ============================================================
+
   useEffect(() => {
     getProjects()
       .then((data) => {
@@ -59,7 +63,10 @@ export default function App() {
   }, []);
 
 
-  // Add Project
+  // ============================================================
+  // ADD PROJECT
+  // ============================================================
+
   const handleAddProject = async (newProj) => {
     try {
 
@@ -80,7 +87,10 @@ export default function App() {
   };
 
 
-  // Delete Project
+  // ============================================================
+  // DELETE PROJECT
+  // ============================================================
+
   const handleDeleteConfirm = async (id) => {
 
     try {
@@ -107,51 +117,64 @@ export default function App() {
   };
 
 
-  // Update Project
+  // ============================================================
+  // UPDATE PROJECT
+  // ============================================================
+
   const handleUpdateProject = async (updatedProj) => {
-  try {
-    const existingProject = projects.find(
-      (p) => p.id === updatedProj.id
-    );
 
-    if (!existingProject) {
-      console.error("Project not found:", updatedProj);
-      return;
+    try {
+
+      const existingProject = projects.find(
+        (p) => p.id === updatedProj.id
+      );
+
+      if (!existingProject) {
+        console.error("Project not found:", updatedProj);
+        return;
+      }
+
+      await updateProject(
+        existingProject.dbId,
+        updatedProj
+      );
+
+      // Fetch fresh data so ML prediction is updated
+      const freshProjects = await getProjects();
+
+      setProjects(freshProjects);
+
+      setEditingProject(null);
+
+    } catch (error) {
+
+      console.error("Error updating project:", error);
+
+      alert("Failed to update project. Please try again.");
+
     }
+  };
 
-    // Update project in backend
-    await updateProject(
-      existingProject.dbId,
-      updatedProj
-    );
 
-    // IMPORTANT:
-    // Fetch fresh data from backend so the UI gets
-    // the newly calculated ML prediction.
-    const freshProjects = await getProjects();
+  // ============================================================
+  // ACTIVE ALERT COUNT
+  // ============================================================
 
-    setProjects(freshProjects);
+  const activeAlertsCount = projects.filter(
+    (project) =>
+      project.riskLevel === 'HIGH' ||
+      project.riskLevel === 'CRITICAL'
+  ).length;
 
-    // Close edit modal
-    setEditingProject(null);
-
-  } catch (error) {
-    console.error("Error updating project:", error);
-    alert("Failed to update project. Please try again.");
-  }
-};
-
-const activeAlertsCount = projects.filter(
-  (project) =>
-    project.riskLevel === 'HIGH' ||
-    project.riskLevel === 'CRITICAL'
-).length;
 
   return (
 
     <div className="app-container">
 
-      {/* SIH Banner */}
+      {/* ========================================================
+          SIH BANNER
+          ======================================================== */}
+
       <div className="sih-disclaimer-banner">
         SIH 2026 PROTOTYPE — Predictive Analytics for Early Detection of Land Acquisition Delays (Synthetic Dataset)
       </div>
@@ -159,7 +182,9 @@ const activeAlertsCount = projects.filter(
 
       {!isAuthenticated ? (
 
-        /* PUBLIC PORTAL EXPERIENCE */
+        /* ======================================================
+           PUBLIC PORTAL
+           ====================================================== */
 
         <>
 
@@ -181,11 +206,15 @@ const activeAlertsCount = projects.filter(
             )}
 
             {activePublicTab === 'projects' && (
-              <PublicProjects projects={projects} />
+              <PublicProjects
+                projects={projects}
+              />
             )}
 
             {activePublicTab === 'notices' && (
-              <PublicNotices notices={MOCK_NOTICES} />
+              <PublicNotices
+                notices={MOCK_NOTICES}
+              />
             )}
 
             {activePublicTab === 'login' && (
@@ -200,7 +229,9 @@ const activeAlertsCount = projects.filter(
 
       ) : (
 
-        /* AUTHORIZED OFFICER PORTAL EXPERIENCE */
+        /* ======================================================
+           AUTHORIZED OFFICER PORTAL
+           ====================================================== */
 
         <div className="officer-layout">
 
@@ -208,18 +239,16 @@ const activeAlertsCount = projects.filter(
             activePage={activeOfficerPage}
             setActivePage={setActiveOfficerPage}
             onLogout={() => setIsAuthenticated(false)}
-
-            /*
-              Still using alerts.length for the sidebar
-              notification count for now.
-            */
             notificationsCount={activeAlertsCount}
           />
 
 
           <main className="main-content">
 
-            {/* Dashboard */}
+            {/* ==================================================
+                DASHBOARD
+                ================================================== */}
+
             {activeOfficerPage === 'dashboard' && (
               <Dashboard
                 projects={projects}
@@ -228,7 +257,10 @@ const activeAlertsCount = projects.filter(
             )}
 
 
-            {/* Projects */}
+            {/* ==================================================
+                PROJECTS
+                ================================================== */}
+
             {activeOfficerPage === 'projects' && (
               <Projects
                 projects={projects}
@@ -239,7 +271,10 @@ const activeAlertsCount = projects.filter(
             )}
 
 
-            {/* Add Project */}
+            {/* ==================================================
+                ADD PROJECT
+                ================================================== */}
+
             {activeOfficerPage === 'add-project' && (
               <AddProject
                 onAddProject={handleAddProject}
@@ -247,13 +282,19 @@ const activeAlertsCount = projects.filter(
             )}
 
 
-            {/* AI Analyze Project */}
+            {/* ==================================================
+                AI ANALYZE PROJECT
+                ================================================== */}
+
             {activeOfficerPage === 'analyze' && (
               <AnalyzeProject />
             )}
 
 
-            {/* Risk Monitoring */}
+            {/* ==================================================
+                RISK MONITORING
+                ================================================== */}
+
             {activeOfficerPage === 'risk-monitoring' && (
               <RiskMonitoring
                 projects={projects}
@@ -261,7 +302,10 @@ const activeAlertsCount = projects.filter(
             )}
 
 
-            {/* Alerts */}
+            {/* ==================================================
+                ALERTS
+                ================================================== */}
+
             {activeOfficerPage === 'alerts' && (
               <Alerts
                 projects={projects}
@@ -269,7 +313,10 @@ const activeAlertsCount = projects.filter(
             )}
 
 
-            {/* Recommendations */}
+            {/* ==================================================
+                RECOMMENDATIONS
+                ================================================== */}
+
             {activeOfficerPage === 'recommendations' && (
               <Recommendations
                 projects={projects}
@@ -277,13 +324,19 @@ const activeAlertsCount = projects.filter(
             )}
 
 
-            {/* Reports */}
+            {/* ==================================================
+                REPORTS
+                ================================================== */}
+
             {activeOfficerPage === 'reports' && (
               <Reports />
             )}
 
 
-            {/* Profile */}
+            {/* ==================================================
+                PROFILE
+                ================================================== */}
+
             {activeOfficerPage === 'profile' && (
               <Profile
                 onLogout={() => setIsAuthenticated(false)}
@@ -297,7 +350,10 @@ const activeAlertsCount = projects.filter(
       )}
 
 
-      {/* Delete Confirmation Modal */}
+      {/* ========================================================
+          DELETE CONFIRMATION MODAL
+          ======================================================== */}
+
       <ConfirmDeleteModal
         project={deleteTarget}
         onConfirm={handleDeleteConfirm}
@@ -305,14 +361,20 @@ const activeAlertsCount = projects.filter(
       />
 
 
-      {/* Project Details Modal */}
+      {/* ========================================================
+          PROJECT DETAILS MODAL
+          ======================================================== */}
+
       <ProjectDetailsModal
         project={viewTarget}
         onClose={() => setViewTarget(null)}
       />
 
 
-      {/* Edit Project Modal */}
+      {/* ========================================================
+          EDIT PROJECT MODAL
+          ======================================================== */}
+
       {editingProject && (
         <EditProjectModal
           project={editingProject}
@@ -321,6 +383,10 @@ const activeAlertsCount = projects.filter(
         />
       )}
 
+
+      {/* ========================================================
+          FOOTER
+          ======================================================== */}
 
       <Footer />
 

@@ -19,13 +19,11 @@ import {
   Folder
 } from 'lucide-react';
 
+import ProjectMap from "../components/ProjectMap";
+
 export default function Dashboard({ projects, onNavigate }) {
 
   const total = projects.length;
-
-  // ============================================================
-  // RISK COUNTS
-  // ============================================================
 
   const criticalRisk = projects.filter(
     p => p.riskLevel === 'CRITICAL'
@@ -43,12 +41,7 @@ export default function Dashboard({ projects, onNavigate }) {
     p => p.riskLevel === 'LOW'
   ).length;
 
-  // High + Critical = projects requiring urgent action
   const actionRequired = criticalRisk + highRisk;
-
-  // ============================================================
-  // AVERAGE PREDICTED DELAY
-  // ============================================================
 
   const avgDelay = total > 0
     ? Math.round(
@@ -58,10 +51,6 @@ export default function Dashboard({ projects, onNavigate }) {
         ) / total
       )
     : 0;
-
-  // ============================================================
-  // RISK DISTRIBUTION
-  // ============================================================
 
   const riskDistributionData = [
     {
@@ -85,10 +74,6 @@ export default function Dashboard({ projects, onNavigate }) {
       color: 'var(--risk-low)'
     }
   ];
-
-  // ============================================================
-  // DELAY TREND
-  // ============================================================
 
   const delayTrendData = projects
     .slice()
@@ -115,22 +100,16 @@ export default function Dashboard({ projects, onNavigate }) {
         Real-time Delay Risk Metrics and Decision Support Overview
       </p>
 
-      {/* ========================================================
-          KPI CARDS
-      ======================================================== */}
+      {/* KPI CARDS */}
 
       <div className="grid-4" style={{ marginBottom: '24px' }}>
 
-        {/* TOTAL PROJECTS */}
         <div className="card">
-
           <div style={{
             display: 'flex',
             justifyContent: 'space-between'
           }}>
-
             <div>
-
               <div style={{
                 fontSize: '0.8rem',
                 color: 'var(--text-muted)'
@@ -144,26 +123,18 @@ export default function Dashboard({ projects, onNavigate }) {
               }}>
                 {total}
               </div>
-
             </div>
 
             <Folder color="var(--gov-blue)" />
-
           </div>
-
         </div>
 
-
-        {/* CRITICAL + HIGH RISK */}
         <div className="card">
-
           <div style={{
             display: 'flex',
             justifyContent: 'space-between'
           }}>
-
             <div>
-
               <div style={{
                 fontSize: '0.8rem',
                 color: 'var(--text-muted)'
@@ -178,26 +149,18 @@ export default function Dashboard({ projects, onNavigate }) {
               }}>
                 {actionRequired}
               </div>
-
             </div>
 
             <AlertCircle color="var(--risk-critical)" />
-
           </div>
-
         </div>
 
-
-        {/* AVERAGE DELAY */}
         <div className="card">
-
           <div style={{
             display: 'flex',
             justifyContent: 'space-between'
           }}>
-
             <div>
-
               <div style={{
                 fontSize: '0.8rem',
                 color: 'var(--text-muted)'
@@ -211,26 +174,18 @@ export default function Dashboard({ projects, onNavigate }) {
               }}>
                 {avgDelay} Days
               </div>
-
             </div>
 
             <Clock color="var(--risk-medium)" />
-
           </div>
-
         </div>
 
-
-        {/* ACTION REQUIRED */}
         <div className="card">
-
           <div style={{
             display: 'flex',
             justifyContent: 'space-between'
           }}>
-
             <div>
-
               <div style={{
                 fontSize: '0.8rem',
                 color: 'var(--text-muted)'
@@ -245,28 +200,17 @@ export default function Dashboard({ projects, onNavigate }) {
               }}>
                 {actionRequired}
               </div>
-
             </div>
 
             <CheckCircle color="var(--saffron-accent)" />
-
           </div>
-
         </div>
 
       </div>
 
-
-      {/* ========================================================
-          CHARTS
-      ======================================================== */}
+      {/* CHARTS */}
 
       <div className="grid-2">
-
-
-        {/* ======================================================
-            RISK DISTRIBUTION
-            ====================================================== */}
 
         <div className="card">
 
@@ -278,7 +222,6 @@ export default function Dashboard({ projects, onNavigate }) {
               height: 260
             }}
           >
-
             <ResponsiveContainer>
 
               <PieChart>
@@ -309,15 +252,9 @@ export default function Dashboard({ projects, onNavigate }) {
               </PieChart>
 
             </ResponsiveContainer>
-
           </div>
 
         </div>
-
-
-        {/* ======================================================
-            DELAY TREND
-            ====================================================== */}
 
         <div className="card">
 
@@ -329,7 +266,6 @@ export default function Dashboard({ projects, onNavigate }) {
               height: 260
             }}
           >
-
             <ResponsiveContainer>
 
               <LineChart data={delayTrendData}>
@@ -352,17 +288,39 @@ export default function Dashboard({ projects, onNavigate }) {
               </LineChart>
 
             </ResponsiveContainer>
-
           </div>
 
         </div>
 
       </div>
 
+      {/* GIS PROJECT RISK MAP */}
 
-      {/* ========================================================
-          RISK SUMMARY
-          ======================================================== */}
+      <div
+        className="card"
+        style={{
+          marginTop: '24px'
+        }}
+      >
+
+        <h3>Project Risk Map</h3>
+
+        <p
+          style={{
+            color: 'var(--text-muted)',
+            fontSize: '0.85rem',
+            marginBottom: '16px'
+          }}
+        >
+          Geographical view of land acquisition projects and their risk status
+        </p>
+        
+        <ProjectMap projects={projects} />
+        
+
+      </div>
+
+      {/* RISK SUMMARY */}
 
       <div
         className="card"
@@ -382,97 +340,70 @@ export default function Dashboard({ projects, onNavigate }) {
           }}
         >
 
-          {/* CRITICAL */}
-
           <div>
-            <div
-              style={{
-                fontSize: '0.8rem',
-                color: 'var(--text-muted)'
-              }}
-            >
+            <div style={{
+              fontSize: '0.8rem',
+              color: 'var(--text-muted)'
+            }}>
               Critical
             </div>
 
-            <div
-              style={{
-                fontSize: '1.5rem',
-                fontWeight: 'bold',
-                color: 'var(--risk-critical)'
-              }}
-            >
+            <div style={{
+              fontSize: '1.5rem',
+              fontWeight: 'bold',
+              color: 'var(--risk-critical)'
+            }}>
               {criticalRisk}
             </div>
           </div>
 
-
-          {/* HIGH */}
-
           <div>
-            <div
-              style={{
-                fontSize: '0.8rem',
-                color: 'var(--text-muted)'
-              }}
-            >
+            <div style={{
+              fontSize: '0.8rem',
+              color: 'var(--text-muted)'
+            }}>
               High
             </div>
 
-            <div
-              style={{
-                fontSize: '1.5rem',
-                fontWeight: 'bold',
-                color: 'var(--risk-high)'
-              }}
-            >
+            <div style={{
+              fontSize: '1.5rem',
+              fontWeight: 'bold',
+              color: 'var(--risk-high)'
+            }}>
               {highRisk}
             </div>
           </div>
 
-
-          {/* MEDIUM */}
-
           <div>
-            <div
-              style={{
-                fontSize: '0.8rem',
-                color: 'var(--text-muted)'
-              }}
-            >
+            <div style={{
+              fontSize: '0.8rem',
+              color: 'var(--text-muted)'
+            }}>
               Medium
             </div>
 
-            <div
-              style={{
-                fontSize: '1.5rem',
-                fontWeight: 'bold',
-                color: 'var(--risk-medium)'
-              }}
-            >
+            <div style={{
+              fontSize: '1.5rem',
+              fontWeight: 'bold',
+              color: 'var(--risk-medium)'
+            }}>
               {mediumRisk}
             </div>
           </div>
 
-
-          {/* LOW */}
-
           <div>
-            <div
-              style={{
-                fontSize: '0.8rem',
-                color: 'var(--text-muted)'
-              }}
-            >
+            <div style={{
+              fontSize: '0.8rem',
+              color: 'var(--text-muted)'
+            }}>
               Low
             </div>
 
-            <div
-              style={{
-                fontSize: '1.5rem',
-                fontWeight: 'bold',
-                color: 'var(--risk-low)'
-              }}
-            >
+            <div style={{
+              fontSize: '1.5rem',
+              fontWeight: 'bold',
+              color: 'var(--risk-low)'
+            }}>
               {lowRisk}
             </div>
           </div>

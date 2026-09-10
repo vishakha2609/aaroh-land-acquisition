@@ -13,6 +13,10 @@ class ProjectCreate(BaseModel):
 
     state: str
 
+    latitude: Optional[float] = None
+
+    longitude: Optional[float] = None
+
     project_type: str
 
     land_area: float = Field(gt=0)
@@ -73,6 +77,10 @@ class ProjectResponse(BaseModel):
     district: Optional[str]
 
     state: Optional[str]
+
+    latitude: Optional[float]
+
+    longitude: Optional[float]
 
     project_type: Optional[str]
 

@@ -1,3 +1,11 @@
+// ============================================================
+// API URL
+// ============================================================
+
+// LOCAL DEVELOPMENT
+// const API_URL = "http://127.0.0.1:8000";
+
+// FOR DEPLOYMENT, change to:
 const API_URL = "https://aaroh-land-acquisition-1.onrender.com";
 
 
@@ -6,7 +14,9 @@ const API_URL = "https://aaroh-land-acquisition-1.onrender.com";
 // ============================================================
 
 function mapProject(project) {
+
   return {
+
     // Frontend project ID
     id: project.project_id,
 
@@ -18,9 +28,24 @@ function mapProject(project) {
     state: project.state,
     type: project.project_type,
 
+    // ========================================================
+    // GIS LOCATION
+    // ========================================================
+
+    latitude: project.latitude,
+    longitude: project.longitude,
+
+    // ========================================================
+    // PROJECT DATA
+    // ========================================================
+
     landArea: project.land_area,
-    affectedFamilies: project.affected_families,
-    landowners: project.landowners,
+
+    affectedFamilies:
+      project.affected_families,
+
+    landowners:
+      project.landowners,
 
     compensationCompletion:
       project.compensation_completion,
@@ -46,7 +71,10 @@ function mapProject(project) {
     stakeholderResponse:
       project.stakeholder_response,
 
-    // ML prediction fields
+    // ========================================================
+    // ML PREDICTION
+    // ========================================================
+
     predictionStatus:
       project.prediction_status,
 
@@ -126,6 +154,14 @@ export async function createProject(project) {
     project_type:
       project.type,
 
+    // GIS LOCATION
+    latitude:
+      Number(project.latitude),
+
+    longitude:
+      Number(project.longitude),
+
+    // PROJECT DATA
     land_area:
       project.landArea,
 
@@ -160,12 +196,10 @@ export async function createProject(project) {
       project.stakeholderResponse
   };
 
-
   console.log(
     "Sending project to backend:",
     requestBody
   );
-
 
   const response = await fetch(
     `${API_URL}/api/projects`,
@@ -182,11 +216,6 @@ export async function createProject(project) {
     }
   );
 
-
-  // ----------------------------------------------------------
-  // HANDLE BACKEND ERROR
-  // ----------------------------------------------------------
-
   if (!response.ok) {
 
     const errorText =
@@ -202,20 +231,13 @@ export async function createProject(project) {
     );
   }
 
-
-  // ----------------------------------------------------------
-  // READ BACKEND RESPONSE
-  // ----------------------------------------------------------
-
   const data =
     await response.json();
-
 
   console.log(
     "Project created successfully:",
     data
   );
-
 
   return mapProject(data);
 }
@@ -234,7 +256,6 @@ export async function deleteProject(dbId) {
     }
   );
 
-
   if (!response.ok) {
 
     const errorText =
@@ -249,7 +270,6 @@ export async function deleteProject(dbId) {
       `Failed to delete project (${response.status}): ${errorText}`
     );
   }
-
 
   return response.json();
 }
@@ -281,6 +301,14 @@ export async function updateProject(
     project_type:
       project.type,
 
+    // GIS LOCATION
+    latitude:
+      Number(project.latitude),
+
+    longitude:
+      Number(project.longitude),
+
+    // PROJECT DATA
     land_area:
       project.landArea,
 
@@ -315,12 +343,10 @@ export async function updateProject(
       project.stakeholderResponse
   };
 
-
   console.log(
     "Updating project:",
     requestBody
   );
-
 
   const response = await fetch(
     `${API_URL}/api/projects/${dbId}`,
@@ -337,7 +363,6 @@ export async function updateProject(
     }
   );
 
-
   if (!response.ok) {
 
     const errorText =
@@ -353,16 +378,13 @@ export async function updateProject(
     );
   }
 
-
   const data =
     await response.json();
-
 
   console.log(
     "Project updated successfully:",
     data
   );
-
 
   return mapProject(data);
 }
