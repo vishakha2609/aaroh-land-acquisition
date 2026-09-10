@@ -1,9 +1,11 @@
+
 from fastapi import FastAPI, Depends, HTTPException
 from fastapi.middleware.cors import CORSMiddleware
 from sqlalchemy.orm import Session
 import uuid
 import pandas as pd
 import joblib
+import shap
 from pathlib import Path
 
 from database import engine, get_db, Base
@@ -20,6 +22,13 @@ BASE_DIR = Path(__file__).resolve().parent
 model = joblib.load(
     BASE_DIR / "land_acquisition_model.pkl"
 )
+
+
+# ============================================================
+# SHAP EXPLAINER
+# ============================================================
+
+explainer = shap.TreeExplainer(model)
 
 
 # ============================================================
@@ -63,7 +72,7 @@ def health():
 
 
 # ============================================================
-# ML PREDICTION
+# ML PREDICTION + SHAP EXPLANATION
 # ============================================================
 
 @app.post("/api/predict")
@@ -91,10 +100,47 @@ def predict_project(project: ProjectCreate):
         ]
     }])
 
-    # Get prediction from Random Forest model
+    # ========================================================
+    # GET PREDICTION FROM RANDOM FOREST MODEL
+    # ========================================================
+
     prediction = round(
         float(model.predict(input_data)[0]),
         2
+    )
+
+    # ========================================================
+    # SHAP EXPLANATION
+    # ========================================================
+
+    shap_values = explainer.shap_values(input_data)[0]
+
+    feature_names = input_data.columns.tolist()
+
+    shap_factors = []
+
+    for feature, value in zip(feature_names, shap_values):
+
+        impact = round(float(value), 2)
+
+        if impact > 0:
+            direction = "increases risk"
+        elif impact < 0:
+            direction = "reduces risk"
+        else:
+            direction = "no significant impact"
+
+        shap_factors.append({
+            "feature": feature,
+            "impact": impact,
+            "direction": direction
+        })
+
+    # Sort by strongest impact
+    shap_factors = sorted(
+        shap_factors,
+        key=lambda x: abs(x["impact"]),
+        reverse=True
     )
 
     # ========================================================
@@ -127,7 +173,8 @@ def predict_project(project: ProjectCreate):
         "delay_probability": prediction,
         "risk_level": risk_level,
         "prediction_status": status,
-        "predicted_delay_days": predicted_delay_days
+        "predicted_delay_days": predicted_delay_days,
+        "shap_factors": shap_factors
     }
 
 
@@ -509,3 +556,4 @@ def delete_project(
         "message": "Project deleted successfully",
         "id": project_id
     }
+

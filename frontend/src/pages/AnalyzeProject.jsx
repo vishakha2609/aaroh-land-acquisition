@@ -31,84 +31,6 @@ export default function AnalyzeProject() {
     }));
   };
 
-  const generateRiskFactors = () => {
-    const factors = [];
-
-    if (Number(formData.compensationCompletion) < 50) {
-      factors.push({
-        feature: 'Low Compensation Completion',
-        impact: `Only ${formData.compensationCompletion}% completed`,
-        positive: true
-      });
-    }
-
-    if (Number(formData.possessionPct) < 50) {
-      factors.push({
-        feature: 'Low Land Possession',
-        impact: `Only ${formData.possessionPct}% possession`,
-        positive: true
-      });
-    }
-
-    if (Number(formData.rehabilitationPct) < 50) {
-      factors.push({
-        feature: 'Low Rehabilitation Progress',
-        impact: `Only ${formData.rehabilitationPct}% completed`,
-        positive: true
-      });
-    }
-
-    if (formData.legalDispute === 'true') {
-      factors.push({
-        feature: 'Active Legal Dispute',
-        impact: 'High Risk Factor',
-        positive: true
-      });
-    }
-
-    if (formData.ownershipConflict === 'true') {
-      factors.push({
-        feature: 'Ownership Conflict',
-        impact: 'High Risk Factor',
-        positive: true
-      });
-    }
-
-    if (Number(formData.courtCases) > 0) {
-      factors.push({
-        feature: 'Pending Court Cases',
-        impact: `${formData.courtCases} case(s)`,
-        positive: true
-      });
-    }
-
-    if (Number(formData.approvalDelayDays) > 30) {
-      factors.push({
-        feature: 'Approval Delay',
-        impact: `${formData.approvalDelayDays} days`,
-        positive: true
-      });
-    }
-
-    if (formData.stakeholderResponse === 'Poor') {
-      factors.push({
-        feature: 'Slow Stakeholder Response',
-        impact: 'High Risk Factor',
-        positive: true
-      });
-    }
-
-    if (factors.length === 0) {
-      factors.push({
-        feature: 'Project Conditions',
-        impact: 'No major risk indicators',
-        positive: false
-      });
-    }
-
-    return factors.slice(0, 6);
-  };
-
   const generateRecommendations = () => {
     const recommendations = [];
 
@@ -239,7 +161,10 @@ export default function AnalyzeProject() {
         predictionStatus: data.prediction_status,
         predictedDelayDays: data.predicted_delay_days,
 
-        shapFactors: generateRiskFactors(),
+        // Use actual SHAP factors returned by backend
+        shapFactors: data.shap_factors || [],
+
+        // Keep current recommendation system unchanged for now
         recommendations: generateRecommendations(),
 
         expectedRange:
@@ -745,38 +670,59 @@ export default function AnalyzeProject() {
 
               <div className="shap-bar-container">
 
-                {result.shapFactors.map(
-                  (item, idx) => (
+                {result.shapFactors.length > 0 ? (
 
-                    <div
-                      key={idx}
-                      className="shap-item"
-                      style={{
-                        borderLeftColor:
-                          item.positive
-                            ? 'var(--risk-critical)'
-                            : 'var(--risk-low)'
-                      }}
-                    >
+                  result.shapFactors.map(
+                    (item, idx) => {
 
-                      <span>
-                        {item.feature}
-                      </span>
+                      const increasesRisk =
+                        item.direction === 'increases risk';
 
-                      <strong
-                        style={{
-                          color:
-                            item.positive
-                              ? 'var(--risk-critical)'
-                              : 'var(--risk-low)'
-                        }}
-                      >
-                        {item.impact}
-                      </strong>
+                      return (
+                        <div
+                          key={idx}
+                          className="shap-item"
+                          style={{
+                            borderLeftColor:
+                              increasesRisk
+                                ? 'var(--risk-critical)'
+                                : 'var(--risk-low)'
+                          }}
+                        >
 
-                    </div>
+                          <span>
+                            {item.feature}
+                          </span>
 
+                          <strong
+                            style={{
+                              color:
+                                increasesRisk
+                                  ? 'var(--risk-critical)'
+                                  : 'var(--risk-low)'
+                            }}
+                          >
+                            {item.impact > 0 ? '+' : ''}
+                            {item.impact}
+                          </strong>
+
+                        </div>
+                      );
+
+                    }
                   )
+
+                ) : (
+
+                  <div
+                    style={{
+                      color: 'var(--text-muted)',
+                      fontSize: '0.85rem'
+                    }}
+                  >
+                    No SHAP explanation available.
+                  </div>
+
                 )}
 
               </div>
